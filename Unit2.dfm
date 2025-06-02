@@ -1,158 +1,75 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  Align = alClient
-  Caption = 'POS Terminal'
-  ClientHeight = 471
-  ClientWidth = 784
-  Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -12
-  Font.Name = 'Segoe UI'
-  Font.Style = []
-  TextHeight = 15
+  Caption = 'POS System'
+  ClientHeight = 600
+  ClientWidth = 900
+  Position = poScreenCenter
+  OnCreate = FormCreate
   object MainPanel: TPanel
-    Left = 0
-    Top = 0
-    Width = 784
-    Height = 471
     Align = alClient
-    Caption = 'Panel1'
-    TabOrder = 0
     object ProductsPanel: TPanel
-      Left = 1
-      Top = 30
-      Width = 500
-      Height = 404
       Align = alLeft
-      TabOrder = 0
-      object Label1: TLabel
-        Left = 240
-        Top = 112
-        Width = 47
-        Height = 15
-        Caption = 'Products'
-      end
+      Width = 450
+      Caption = 'Products'
       object ProductListView: TListView
-        Left = 1
-        Top = 1
-        Width = 498
-        Height = 402
         Align = alClient
-        Columns = <
-          item
-            Caption = 'Name'
-          end
-          item
-            Caption = 'Price'
-          end
-          item
-            Caption = 'Image'
-          end>
-        GridLines = True
-        ReadOnly = True
-        RowSelect = True
-        TabOrder = 0
         ViewStyle = vsReport
-        OnClick = btnLoadProductsClick
-      end
-      object btnLoadProducts: TButton
-        Left = 216
-        Top = 192
-        Width = 75
-        Height = 25
-        Caption = 'Load Products'
-        TabOrder = 1
-        OnClick = btnLoadProductsClick
+        Columns = <
+          item Caption = 'Name' Width = 150 end
+          item Caption = 'Price' Width = 80 end
+          item Caption = 'Image' Width = 150 end>
       end
     end
     object CartPanel: TPanel
-      Left = 501
-      Top = 30
-      Width = 282
-      Height = 404
-      Align = alClient
-      TabOrder = 1
-      object Cart: TLabel
-        Left = 72
-        Top = 200
-        Width = 22
-        Height = 15
-        Caption = 'Cart'
-      end
+      Align = alRight
+      Width = 450
+      Caption = 'Cart'
       object CartListView: TListView
-        Left = 1
-        Top = 1
-        Width = 280
-        Height = 402
         Align = alClient
-        Columns = <
-          item
-            Caption = 'Name'
-          end
-          item
-            Caption = 'Qty'
-          end
-          item
-            Caption = 'Price'
-          end
-          item
-            Caption = 'Total'
-          end>
-        TabOrder = 0
         ViewStyle = vsReport
+        Columns = <
+          item Caption = 'Product' Width = 150 end
+          item Caption = 'Quantity' Width = 80 end
+          item Caption = 'Total' Width = 100 end>
       end
     end
-    object StatusBar1: TStatusBar
-      Left = 1
-      Top = 451
-      Width = 782
-      Height = 19
-      Panels = <
-        item
-          Text = 'Ready'
-          Width = 50
-        end
-        item
-          Text = 'Ready'
-          Width = 50
-        end>
+  end
+  object ToolBar1: TToolBar
+    Align = alTop
+    ShowCaptions = True
+    object Load: TToolButton
+      Caption = 'Load'
     end
-    object ProgressBar1: TProgressBar
-      Left = 1
-      Top = 434
-      Width = 782
-      Height = 17
-      Align = alBottom
-      TabOrder = 3
-      Visible = False
+    object Add: TToolButton
+      Caption = 'Add'
+      OnClick = AddClick
     end
-    object ToolBar1: TToolBar
-      Left = 1
-      Top = 1
-      Width = 782
-      Height = 29
-      Caption = 'ToolBar1'
-      TabOrder = 4
-      object Load: TToolButton
-        Left = 0
-        Top = 0
-        Caption = 'Load'
-        ImageIndex = 0
-      end
-      object Add: TToolButton
-        Left = 23
-        Top = 0
-        Caption = 'Add'
-        ImageIndex = 1
-      end
-      object Print: TToolButton
-        Left = 46
-        Top = 0
-        Caption = 'Print'
-        ImageIndex = 2
-      end
+    object Print: TToolButton
+      Caption = 'Print'
     end
+  end
+  object btnLoadProducts: TButton
+    Caption = 'Load Products'
+    Left = 20
+    Top = 550
+    Width = 120
+    OnClick = btnLoadProductsClick
+  end
+  object StatusBar1: TStatusBar
+    Align = alBottom
+    Panels = <
+      item Width = 200 Text = 'Ready' end>
+  end
+  object Remove: TToolButton
+  Caption = 'Remove'
+  OnClick = RemoveClick
+end
+  object ProgressBar1: TProgressBar
+    Left = 150
+    Top = 555
+    Width = 200
+    Height = 16
+    Visible = False
   end
 end
