@@ -47,8 +47,8 @@ object MainForm: TMainForm
             Caption = 'Image'
             Width = 150
           end>
+        LargeImages = ProductImageList
         TabOrder = 0
-        ViewStyle = vsReport
       end
     end
     object CartPanel: TPanel
@@ -152,5 +152,11 @@ object MainForm: TMainForm
     Height = 16
     TabOrder = 4
     Visible = False
+  end
+  object ProductImageList: TImageList
+    Height = 48
+    Width = 48
+    Left = 273
+    Top = 182
   end
 end

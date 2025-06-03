@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls,
   Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ToolWin, Vcl.Imaging.pngimage,
-  Vcl.Imaging.jpeg, System.JSON, System.IOUtils;
+  Vcl.Imaging.jpeg, System.JSON, System.IOUtils, System.ImageList, Vcl.ImgList;
 
 type
   TProduct = record
@@ -37,6 +37,7 @@ type
     btnLoadProducts: TButton;
     Recalc: TButton;
     RemoveBtn: TButton;
+    ProductImageList: TImageList;
 
     procedure FormCreate(Sender: TObject);
     procedure PrintClick(Sender: TObject);
@@ -166,6 +167,7 @@ begin
   Add.OnClick := AddClick;
   Print.OnClick := PrintClick;
   RemoveBtn.OnClick := RemoveClick;
+  ProductListView.LargeImages := ProductImageList;
 end;
 
 procedure TMainForm.btnLoadProductsClick(Sender: TObject);
@@ -189,6 +191,8 @@ var
   Product: TProduct;
   Item: TListItem;
   ImagePath: string;
+  PNG: TPngImage;
+  BMP: TBitmap;
 begin
   SL := TStringList.Create;
   try
@@ -197,18 +201,17 @@ begin
       ShowMessage('File "Data\products.csv" not found.');
       Exit;
     end;
-
-    SL.LoadFromFile('Data\products.csv');
-    SetLength(ProductList, SL.Count);
-    ProductListView.Items.Clear;
-
     if ProductListView.Columns.Count = 0 then
     begin
       ProductListView.ViewStyle := vsReport;
       ProductListView.Columns.Add.Caption := 'Name';
       ProductListView.Columns.Add.Caption := 'Price';
-      ProductListView.Columns.Add.Caption := 'Image';
     end;
+
+    SL.LoadFromFile('Data\products.csv');
+    SetLength(ProductList, SL.Count);
+    ProductListView.Items.Clear;
+    ProductImageList.Clear;
 
     for i := 0 to SL.Count - 1 do
     begin
@@ -225,17 +228,35 @@ begin
         Item.Caption := Product.Name;
         Item.SubItems.Add(Format('%.2f', [Product.Price]));
 
+        // Load image
         ImagePath := 'Images\' + Product.ImageFileName;
         if FileExists(ImagePath) then
-          Item.SubItems.Add('[Image OK]')
+        begin
+          PNG := TPngImage.Create;
+          BMP := TBitmap.Create;
+          try
+            PNG.LoadFromFile(ImagePath);
+            BMP.SetSize(ProductImageList.Width, ProductImageList.Height);
+            BMP.Canvas.StretchDraw(Rect(0, 0, BMP.Width, BMP.Height), PNG);
+            Item.ImageIndex := ProductImageList.Add(BMP, nil);
+          finally
+            PNG.Free;
+            BMP.Free;
+          end;
+        end
         else
-          Item.SubItems.Add('[Missing Image]');
+        begin
+          Item.ImageIndex := -1;
+        end;
       end;
     end;
   finally
     SL.Free;
   end;
 end;
+
+
+
 
 procedure TMainForm.PrintClick(Sender: TObject);
 var

@@ -1,0 +1,16 @@
+{
+    "timestamp": "6\/3\/2025 11:44:57 PM",
+    "items": [
+        {
+            "name": "Bread",
+            "quantity": "3",
+            "lineTotal": "4.50"
+        },
+        {
+            "name": "Apple",
+            "quantity": "2",
+            "lineTotal": "1.50"
+        }
+    ],
+    "total": "Total: $16.50"
+}
