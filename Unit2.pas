@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls,
   Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ToolWin, Vcl.Imaging.pngimage,
-  Vcl.Imaging.jpeg;
+  Vcl.Imaging.jpeg, System.JSON, System.IOUtils;
 
 type
   TProduct = record
@@ -35,11 +35,15 @@ type
     Add: TToolButton;
     Print: TToolButton;
     btnLoadProducts: TButton;
+    Recalc: TButton;
+    RemoveBtn: TButton;
 
     procedure FormCreate(Sender: TObject);
+    procedure PrintClick(Sender: TObject);
     procedure btnLoadProductsClick(Sender: TObject);
-    procedure CalculateTotal
-    ;
+    procedure CalculateTotal;
+    procedure RemoveClick(Sender: TObject);
+    procedure RecalcClick(Sender: TObject);
 
   private
     procedure LoadProducts;
@@ -52,6 +56,8 @@ var
 
 implementation
 
+{$R *.dfm}
+
 type
   TTotalCalculationThread = class(TThread)
   private
@@ -60,6 +66,45 @@ type
     procedure Execute; override;
     procedure UpdateUI;
   end;
+
+  TLogThread = class(TThread)
+  private
+    FLogData: string;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(const AData: string);
+  end;
+
+constructor TLogThread.Create(const AData: string);
+begin
+  inherited Create(False); // Auto-start
+  FreeOnTerminate := True;
+  FLogData := AData;
+end;
+
+procedure TLogThread.Execute;
+var
+  LogFile: TextFile;
+  LogPath: string;
+begin
+  LogPath := 'Logs';
+  if not DirectoryExists(LogPath) then
+    CreateDir(LogPath);
+
+  AssignFile(LogFile, LogPath + '\sales.log');
+  if FileExists(LogPath + '\sales.log') then
+    Append(LogFile)
+  else
+    Rewrite(LogFile);
+
+  try
+    Writeln(LogFile, FormatDateTime('[yyyy-mm-dd hh:nn:ss] ', Now) + FLogData);
+  finally
+    CloseFile(LogFile);
+  end;
+end;
+
 procedure TMainForm.CalculateTotal;
 begin
   ProgressBar1.Visible := True;
@@ -94,22 +139,19 @@ begin
   ).Start;
 end;
 
-
 procedure TTotalCalculationThread.Execute;
 var
   i: Integer;
   Price, Quantity: Double;
 begin
   FTotal := 0;
-  // Simulate progress (optional)
   for i := 0 to MainForm.CartListView.Items.Count - 1 do
   begin
-    Sleep(100); // Simulate some work
+    Sleep(100);
     Quantity := StrToFloatDef(MainForm.CartListView.Items[i].SubItems[0], 0);
     Price := StrToFloatDef(MainForm.CartListView.Items[i].SubItems[1], 0);
     FTotal := FTotal + (Quantity * Price);
   end;
-
   Synchronize(UpdateUI);
 end;
 
@@ -119,17 +161,24 @@ begin
   MainForm.ProgressBar1.Visible := False;
 end;
 
-
-{$R *.dfm}
-
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   Add.OnClick := AddClick;
+  Print.OnClick := PrintClick;
+  RemoveBtn.OnClick := RemoveClick;
 end;
 
 procedure TMainForm.btnLoadProductsClick(Sender: TObject);
 begin
   LoadProducts;
+end;
+
+procedure TMainForm.RemoveClick(Sender: TObject);
+begin
+  if Assigned(CartListView.Selected) then
+    CartListView.Selected.Delete
+  else
+    ShowMessage('Select an item from the cart to remove.');
 end;
 
 procedure TMainForm.LoadProducts;
@@ -153,7 +202,6 @@ begin
     SetLength(ProductList, SL.Count);
     ProductListView.Items.Clear;
 
-    // Optional: set columns in code if not done in the form designer
     if ProductListView.Columns.Count = 0 then
     begin
       ProductListView.ViewStyle := vsReport;
@@ -161,7 +209,6 @@ begin
       ProductListView.Columns.Add.Caption := 'Price';
       ProductListView.Columns.Add.Caption := 'Image';
     end;
-  ShowMessage(ExtractFilePath(Application.ExeName));
 
     for i := 0 to SL.Count - 1 do
     begin
@@ -190,6 +237,62 @@ begin
   end;
 end;
 
+procedure TMainForm.PrintClick(Sender: TObject);
+var
+  I: Integer;
+  Item: TListItem;
+  ReceiptJSON, ItemJSON: TJSONObject;
+  ItemsArray: TJSONArray;
+  LogSummary: string;
+  FileName: string;
+begin
+  if CartListView.Items.Count = 0 then
+  begin
+    ShowMessage('Cart is empty.');
+    Exit;
+  end;
+
+  ReceiptJSON := TJSONObject.Create;
+  ItemsArray := TJSONArray.Create;
+
+  try
+    for I := 0 to CartListView.Items.Count - 1 do
+    begin
+      Item := CartListView.Items[I];
+
+      ItemJSON := TJSONObject.Create;
+      ItemJSON.AddPair('name', Item.Caption);
+      ItemJSON.AddPair('quantity', Item.SubItems[0]);
+      ItemJSON.AddPair('lineTotal', Item.SubItems[1]);
+
+      ItemsArray.AddElement(ItemJSON);
+    end;
+
+    ReceiptJSON.AddPair('timestamp', DateTimeToStr(Now));
+    ReceiptJSON.AddPair('items', ItemsArray);
+    ReceiptJSON.AddPair('total', StatusBar1.Panels[0].Text);
+
+    if not DirectoryExists('Receipts') then
+      CreateDir('Receipts');
+
+    FileName := 'Receipt_' + FormatDateTime('yyyymmdd_hhnnss', Now) + '.json';
+    TFile.WriteAllText('Receipts\' + FileName, ReceiptJSON.Format);
+
+    ShowMessage('Receipt saved to Receipts\' + FileName);
+
+    LogSummary := 'Sale: ' + IntToStr(CartListView.Items.Count) +
+      ' items, ' + StatusBar1.Panels[0].Text;
+    TLogThread.Create(LogSummary);
+  finally
+    ReceiptJSON.Free;
+  end;
+end;
+
+procedure TMainForm.RecalcClick(Sender: TObject);
+begin
+  CalculateTotal;
+end;
+
 procedure TMainForm.AddClick(Sender: TObject);
 var
   SelectedItem: TListItem;
@@ -208,7 +311,6 @@ begin
 
   ProductName := SelectedItem.Caption;
 
-  // Find product index
   ProductIndex := -1;
   for i := 0 to Length(ProductList) - 1 do
     if ProductList[i].Name = ProductName then
@@ -219,12 +321,10 @@ begin
 
   if ProductIndex = -1 then Exit;
 
-  // Check if product already in cart
   Found := False;
   for i := 0 to CartListView.Items.Count - 1 do
     if CartListView.Items[i].Caption = ProductName then
     begin
-      // Update quantity and total price
       CartListView.Items[i].SubItems[0] := IntToStr(StrToInt(CartListView.Items[i].SubItems[0]) + 1);
       CartListView.Items[i].SubItems[1] :=
         FormatFloat('0.00', StrToInt(CartListView.Items[i].SubItems[0]) * ProductList[ProductIndex].Price);
@@ -232,7 +332,6 @@ begin
       Break;
     end;
 
-  // If not found, add new item to cart
   if not Found then
   begin
     CartItem := CartListView.Items.Add;

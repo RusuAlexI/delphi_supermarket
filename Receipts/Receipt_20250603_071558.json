@@ -1,0 +1,11 @@
+{
+    "timestamp": "6\/3\/2025 7:15:58 AM",
+    "items": [
+        {
+            "name": "Milk",
+            "quantity": "7",
+            "lineTotal": "20.93"
+        }
+    ],
+    "total": "Total: $146.51"
+}
