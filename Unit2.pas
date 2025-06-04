@@ -16,6 +16,8 @@ type
     ImageFileName: string;
   end;
 
+const
+  InactivityTimeoutMinutes = 5;
 var
   ProductList: array of TProduct;
 
@@ -38,6 +40,7 @@ type
     Recalc: TButton;
     RemoveBtn: TButton;
     ProductImageList: TImageList;
+    InactivityTimer: TTimer;
 
     procedure FormCreate(Sender: TObject);
     procedure PrintClick(Sender: TObject);
@@ -45,7 +48,10 @@ type
     procedure CalculateTotal;
     procedure RemoveClick(Sender: TObject);
     procedure RecalcClick(Sender: TObject);
+    procedure InactivityTimerTimer(Sender: TObject);
 
+  private
+    InactivityMinutes: Integer;
   private
     procedure LoadProducts;
     procedure AddClick(Sender: TObject);
@@ -177,6 +183,7 @@ end;
 
 procedure TMainForm.RemoveClick(Sender: TObject);
 begin
+  InactivityMinutes := 0;
   if Assigned(CartListView.Selected) then
     CartListView.Selected.Delete
   else
@@ -255,7 +262,16 @@ begin
   end;
 end;
 
-
+procedure TMainForm.InactivityTimerTimer(Sender: TObject);
+begin
+  Inc(InactivityMinutes);
+  if InactivityMinutes >= InactivityTimeoutMinutes then
+  begin
+    CartListView.Items.Clear;
+    StatusBar1.Panels[0].Text := 'Cart cleared due to inactivity.';
+    InactivityMinutes := 0;
+  end;
+end;
 
 
 procedure TMainForm.PrintClick(Sender: TObject);
@@ -267,6 +283,7 @@ var
   LogSummary: string;
   FileName: string;
 begin
+  InactivityMinutes := 0;
   if CartListView.Items.Count = 0 then
   begin
     ShowMessage('Cart is empty.');
@@ -323,6 +340,7 @@ var
   i: Integer;
   Found: Boolean;
 begin
+  InactivityMinutes := 0;
   SelectedItem := ProductListView.Selected;
   if not Assigned(SelectedItem) then
   begin

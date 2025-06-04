@@ -159,4 +159,9 @@ object MainForm: TMainForm
     Left = 273
     Top = 182
   end
+  object InactivityTimer: TTimer
+    Interval = 60000
+    Left = 545
+    Top = 222
+  end
 end
